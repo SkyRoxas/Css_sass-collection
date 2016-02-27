@@ -1,0 +1,278 @@
+@import "compass/css3";
+* {
+    @include box-sizing(border-box);
+}
+
+// Options
+//
+// Quickly modify global styling by enabling or disabling optional features.
+// fales/true
+$enable-flex: false !default;
+$enable-grid-classes: true !default;
+// Grid breakpoints
+//
+// Define the minimum and maximum dimensions at which your layout will change,
+// adapting to different screen sizes, for use in media queries.
+$grid-breakpoints: ( // Extra small screen / phone
+xs: 0, // Small screen / phone
+sm: 544px, // Medium screen / tablet
+md: 768px, // Large screen / desktop
+lg: 992px, // Extra large screen / wide desktop
+xl: 1200px) !default;
+// Grid containers
+//
+// Define the maximum width of `.container` for different screen sizes.
+$container-max-widths: ( sm: 576px, md: 720px, lg: 940px, xl: 1140px) !default;
+// Grid columns
+//
+// Set the number of columns and specify the width of the gutters.
+$grid-columns: 12 !default;
+$grid-gutter-width: 1.875rem !default; // 30px
+@mixin clearfix() {
+    &::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+}
+
+// Breakpoint viewport sizes and media queries.
+//
+// Breakpoints are defined as a map of (name: minimum width), order from small to large:
+//
+//    (xs: 0, sm: 544px, md: 768px)
+//
+// The map defined in the `$grid-breakpoints` global variable is used as the `$breakpoints` argument by default.
+// Name of the next breakpoint, or null for the last breakpoint.
+//
+//    >> breakpoint-next(sm)
+//    md
+//    >> breakpoint-next(sm, (xs: 0, sm: 544px, md: 768px))
+//    md
+//    >> breakpoint-next(sm, $breakpoint-names: (xs sm md))
+//    md
+@function breakpoint-next($name, $breakpoints: $grid-breakpoints, $breakpoint-names: map-keys($breakpoints)) {
+    $n: index($breakpoint-names, $name);
+    @return if($n < length($breakpoint-names), nth($breakpoint-names, $n + 1), null);
+}
+
+// Minimum breakpoint width. Null for the smallest (first) breakpoint.
+//
+//    >> breakpoint-min(sm, (xs: 0, sm: 544px, md: 768px))
+//    544px
+@function breakpoint-min($name, $breakpoints: $grid-breakpoints) {
+    $min: map-get($breakpoints, $name);
+    @return if($min !=0, $min, null);
+}
+
+// Maximum breakpoint width. Null for the largest (last) breakpoint.
+// The maximum value is calculated as the minimum of the next one less 0.1.
+//
+//    >> breakpoint-max(sm, (xs: 0, sm: 544px, md: 768px))
+//    767px
+@function breakpoint-max($name, $breakpoints: $grid-breakpoints) {
+    $next: breakpoint-next($name, $breakpoints);
+    @return if($next, breakpoint-min($next, $breakpoints) - 1px, null);
+}
+
+// Media of at least the minimum breakpoint width. No query for the smallest breakpoint.
+// Makes the @content apply to the given breakpoint and wider.
+
+////example  @include media-breakpoint-up(md){
+//             margin: 10px 0px;
+//             }
+@mixin media-breakpoint-up($name, $breakpoints: $grid-breakpoints) {
+    $min: breakpoint-min($name, $breakpoints);
+    @if $min {
+        @media (min-width: $min) {
+            @content;
+        }
+    }
+    @else {
+        @content;
+    }
+}
+
+// Media of at most the maximum breakpoint width. No query for the largest breakpoint.
+// Makes the @content apply to the given breakpoint and narrower.
+@mixin media-breakpoint-down($name, $breakpoints: $grid-breakpoints) {
+    $max: breakpoint-max($name, $breakpoints);
+    @if $max {
+        @media (max-width: $max) {
+            @content;
+        }
+    }
+    @else {
+        @content;
+    }
+}
+
+// Media between the breakpoint's minimum and maximum widths.
+// No minimum for the smallest breakpoint, and no maximum for the largest one.
+// Makes the @content apply only to the given breakpoint, not viewports any wider or narrower.
+@mixin media-breakpoint-only($name, $breakpoints: $grid-breakpoints) {
+    @include media-breakpoint-up($name, $breakpoints) {
+        @include media-breakpoint-down($name, $breakpoints) {
+            @content;
+        }
+    }
+}
+
+// Media that spans multiple breakpoint widths.
+// Makes the @content apply between the min and max breakpoints
+@mixin media-breakpoint-between($lower, $upper, $breakpoints: $grid-breakpoints) {
+    @include media-breakpoint-up($lower, $breakpoints) {
+        @include media-breakpoint-down($upper, $breakpoints) {
+            @content;
+        }
+    }
+}
+
+/// Grid system
+//
+// Generate semantic grid columns with these mixins.
+@mixin make-container($gutter: $grid-gutter-width) {
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: ($gutter / 2);
+    padding-right: ($gutter / 2);
+    @if not $enable-flex {
+        @include clearfix();
+    }
+}
+
+// For each breakpoint, define the maximum width of the container in a media query
+@mixin make-container-max-widths($max-widths: $container-max-widths) {
+    @each $breakpoint,
+    $container-max-width in $max-widths {
+        @include media-breakpoint-up($breakpoint) {
+            max-width: $container-max-width;
+        }
+    }
+}
+
+@mixin make-row($gutter: $grid-gutter-width) {
+    @if $enable-flex {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    @else {
+        @include clearfix();
+    }
+    margin-left: ($gutter / -2);
+    margin-right: ($gutter / -2);
+}
+
+//gutter
+@mixin make-col($gutter: $grid-gutter-width) {
+    position: relative;
+    // @if not $enable-flex {
+    //     float: left;
+    // }
+    min-height: 1px;
+    padding-left: ($gutter / 2);
+    padding-right: ($gutter / 2);
+}
+
+//responsive col
+
+//example @include make_col_go(sm,4);
+@mixin make_col_go($name, $size, $columns: $grid-columns, $breakpoints: $grid-breakpoints) {
+    $min: breakpoint-max($name, $breakpoints);
+    @if $min {
+        @media (min-width: $min) {
+            @if $enable-flex {
+                flex: 0 0 percentage($size / $columns);
+            }
+            @else {
+                width: percentage($size / $columns);
+                 float: left;
+            }
+        }
+    }
+}
+
+@mixin make-col-offset($size, $columns: $grid-columns) {
+    margin-left: percentage($size / $columns);
+}
+
+@mixin make-col-push($size, $columns: $grid-columns) {
+    left: if($size > 0, percentage($size / $columns), auto);
+}
+
+@mixin make-col-pull($size, $columns: $grid-columns) {
+    right: if($size > 0, percentage($size / $columns), auto);
+}
+
+//example @include make_col_go(md, push, 6);
+@mixin make_col_modifier($name, $type, $size, $columns: $grid-columns, $breakpoints: $grid-breakpoints) {
+    $min: breakpoint-max($name, $breakpoints);
+    @if $min {
+        @media (min-width: $min) {
+            @if $type==push {
+                @include make-col-push($size, $columns);
+            }
+            @else if $type==pull {
+                @include make-col-pull($size, $columns);
+            }
+            @else if $type==offset {
+                @include make-col-offset($size, $columns);
+            }
+        }
+    }
+}
+
+//responsive col
+
+@mixin pull-left {
+    float: left !important;
+}
+
+@mixin pull-right {
+    float: right !important;
+}
+//example @include pull_go(sm,left);
+@mixin pull_go($name, $type, $breakpoints: $grid-breakpoints) {
+    $min: breakpoint-max($name, $breakpoints);
+    @if $min {
+        @media (min-width: $min) {
+            @if $type==left {
+                @include pull-left();
+            }
+            @else if $type==right {
+                 @include pull-right();
+            }
+            @else if $type==none {
+                float: none !important;
+            }
+        }
+    }
+}
+
+
+
+// Responsive image
+//
+// Keep images from scaling beyond the width of their parents.
+@mixin img-fluid($display: block) {
+    display: $display;
+    max-width: 100%; // Part 1: Set a maximum relative to the parent
+    height: auto; // Part 2: Scale the height according to the width, otherwise you get stretching
+}
+
+// Retina image
+//
+// Short retina mixin for setting background-image and -size.
+@mixin img-retina($file-1x, $file-2x, $width-1x, $height-1x) {
+    background-image: url($file-1x);
+    // Autoprefixer takes care of adding -webkit-min-device-pixel-ratio and -o-min-device-pixel-ratio,
+    // but doesn't convert dppx=>dpi.
+    // There's no such thing as unprefixed min-device-pixel-ratio since it's nonstandard.
+    // Compatibility info: http://caniuse.com/#feat=css-media-resolution
+    @media only screen and (min-resolution: 192dpi), // IE9-11 don't support dppx
+    only screen and (min-resolution: 2dppx) {
+        // Standardized
+        background-image: url($file-2x);
+        background-size: $width-1x $height-1x;
+    }
+}
