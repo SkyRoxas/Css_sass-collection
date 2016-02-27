@@ -55,7 +55,7 @@ $grid-float-breakpoint:     $screen-sm-min !default;
 //** Point at which the navbar begins collapsing.
 $grid-float-breakpoint-max: ($grid-float-breakpoint - 1) !default;
 
-
+$gutter_custom:                    30px!default;
 //== Container sizes
 //
 //## Define the maximum width of `.container` for different screen sizes.
@@ -89,26 +89,26 @@ $container-lg:                 $container-large-desktop !default;
 
 
 // Centered container element
-@mixin container-fixed($gutter: $grid-gutter-width) {
+@mixin container-fixed($gutter_custom) {
   margin-right: auto;
   margin-left: auto;
-  padding-left:  floor(($gutter / 2));
-  padding-right: ceil(($gutter / 2));
+  padding-left:  floor(($gutter_custom / 2));
+  padding-right: ceil(($gutter_custom / 2));
   @include clearfix;
 }
 
 // Creates a wrapper for a series of columns
-@mixin make-row($gutter: $grid-gutter-width) {
-  margin-left:  ceil(($gutter / -2));
-  margin-right: floor(($gutter / -2));
+@mixin make-row($gutter_custom) {
+  margin-left:  ceil(($gutter_custom / -2));
+  margin-right: floor(($gutter_custom / -2));
   @include clearfix;
 }
 
-@mixin gutter($gutter: $grid-gutter-width){
+@mixin gutter($gutter_custom1,$gutter_custom2){
    position: relative;
   min-height: 1px;
-  padding-left:  ($gutter / 2);
-  padding-right: ($gutter / 2);
+  padding-left:  ($gutter_custom1 / 2);
+  padding-right: ($gutter_custom2 / 2);
   @include box-sizing(border-box);
 }
 
